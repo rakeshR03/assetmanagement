@@ -204,7 +204,7 @@ public class AssetService {
 
             Asset savedAsset = assetRepo.save(asset);
 
-            return ResponseEntity.status(HttpStatus.OK).body("Asset is recovered");
+            return ResponseEntity.status(HttpStatus.OK).body(savedAsset);
         }
         catch(Exception e){
             e.printStackTrace();
