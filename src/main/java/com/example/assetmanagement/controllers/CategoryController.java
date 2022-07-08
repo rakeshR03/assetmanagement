@@ -21,33 +21,17 @@ public class CategoryController {
 
     @PostMapping("/categories")
     public ResponseEntity<Object> addCategory(@RequestBody CategoryDTO categoryDTO){
-        Category category = categoryService.addCategory(categoryDTO.getName(), categoryDTO.getDescription());
-        return ResponseEntity.status(HttpStatus.OK).body(category);
+        return categoryService.addCategory(categoryDTO.getName(), categoryDTO.getDescription());
+
     }
 
     @PutMapping("/categories/{id}")
     public ResponseEntity<Object> updateCategory(@PathVariable Long id, @RequestBody CategoryDTO categoryDTO){
-        Category category = categoryService.updateCategory(id, categoryDTO);
-        if (category != null) {
-            return ResponseEntity.status(HttpStatus.OK).body(category);
-        }
-        else{
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("cannot update row");
-        }
+        return categoryService.updateCategory(id, categoryDTO);
     }
 
     @GetMapping("/categories")
     public ResponseEntity<Object> findAll(){
-        List<Category> categoryList= categoryService.getAllCategory();
-
-        List<CategoryResponseDTO> categoryResponseDTOList = new ArrayList<>();
-        for(Category x: categoryList){
-            CategoryResponseDTO categoryResponseDTO = new CategoryResponseDTO();
-            categoryResponseDTO.setId(x.getId());
-            categoryResponseDTO.setName(x.getName());
-            categoryResponseDTO.setDescription(x.getDescription());
-            categoryResponseDTOList.add(categoryResponseDTO);
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(categoryResponseDTOList);
+        return categoryService.getAllCategory();
     }
 }

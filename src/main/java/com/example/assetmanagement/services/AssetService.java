@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,67 +25,130 @@ public class AssetService {
     @Autowired
     private EmployeeRepo employeeRepo;
 
-    public Asset addAsset(AssetDTO assetDTO){
-        Asset asset = new Asset();
-        asset.setName(assetDTO.getName());
-        asset.setPurchaseDate(assetDTO.getPurchaseDate());
-        asset.setConditionNote(assetDTO.getConditionNote());
-        asset.setAssignment_status(Assignment_status.AVAILABLE.name());
-        asset.setEmployee(null);
-        asset.setCategory(assetDTO.getCategory());
+    public ResponseEntity<Object> addAsset(AssetDTO assetDTO){
+        try{
+            Asset asset = new Asset();
+            asset.setName(assetDTO.getName());
+            asset.setPurchaseDate(assetDTO.getPurchaseDate());
+            asset.setConditionNote(assetDTO.getConditionNote());
+            asset.setAssignment_status(Assignment_status.AVAILABLE.name());
+            asset.setEmployee(null);
+            asset.setCategory(assetDTO.getCategory());
 
-        return assetRepo.save(asset);
+            Asset savedAsset = assetRepo.save(asset);
+
+            return ResponseEntity.status(HttpStatus.OK).body(savedAsset);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("cannot add asset");
+        }
     }
 
-    public List<Asset> findAllAsset(){
-        return assetRepo.findAll();
+    public ResponseEntity<Object> findAllAsset(){
+        try{
+            List<Asset> assets = assetRepo.findAll();
+            List<AssetResponseDTO> assetResponseDTOList = new ArrayList<>();
+
+            for(Asset asset: assets){
+                AssetResponseDTO assetResponseDTO = new AssetResponseDTO();
+                assetResponseDTO.setId(asset.getId());
+                assetResponseDTO.setName(asset.getName());
+                assetResponseDTO.setPurchaseDate(asset.getPurchaseDate());
+                assetResponseDTO.setConditionNote(asset.getConditionNote());
+                assetResponseDTO.setAssignment_status(asset.getAssignment_status());
+                assetResponseDTO.setCategory(asset.getCategory());
+                assetResponseDTO.setEmployee(asset.getEmployee());
+
+                assetResponseDTOList.add(assetResponseDTO);
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(assetResponseDTOList);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("cannot fetch asset");
+        }
     }
 
-    public int deleteAsset(long id){
+    public ResponseEntity<Object> deleteAsset(long id){
 
-        Optional<Asset> optional = assetRepo.findById(id);
-        if(!optional.isPresent()){
-            throw new RuntimeException("invalid id");
+        try{
+            Optional<Asset> optional = assetRepo.findById(id);
+            if(!optional.isPresent()){
+                throw new RuntimeException("invalid id");
+            }
+
+            Asset asset = optional.get();
+
+            if(!asset.getAssignment_status().equalsIgnoreCase(Assignment_status.ASSIGNED.name())){
+                assetRepo.deleteById(id);
+                return ResponseEntity.status(HttpStatus.OK).body("Asset deleted");
+            }
+            else{
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).
+                        body("Asset is in assigned state, hence cannot be deleted");
+            }
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Asset cannot be deleted");
         }
 
-        Asset asset = optional.get();
-
-        if(!asset.getAssignment_status().equalsIgnoreCase(Assignment_status.ASSIGNED.name())){
-            assetRepo.deleteById(id);
-            return 1;
-        }
-        return -1; // -1, if cannot be deleted
     }
 
-    public Asset findAssetByName(String name){
-        return assetRepo.findByName(name);
+    public ResponseEntity<Object> findAssetByName(String name){
+        try{
+            Asset asset = assetRepo.findByName(name);
+
+            AssetResponseDTO assetResponseDTO = new AssetResponseDTO();
+            assetResponseDTO.setId(asset.getId());
+            assetResponseDTO.setName(asset.getName());
+            assetResponseDTO.setPurchaseDate(asset.getPurchaseDate());
+            assetResponseDTO.setConditionNote(asset.getConditionNote());
+            assetResponseDTO.setAssignment_status(asset.getAssignment_status());
+            assetResponseDTO.setCategory(asset.getCategory());
+            assetResponseDTO.setEmployee(asset.getEmployee());
+
+            return ResponseEntity.status(HttpStatus.OK).body(assetResponseDTO);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("cannot fetch asset");
+        }
+
     }
 
     public ResponseEntity<Object> assignAsset(long assetId, long employeeId){
 
-        Optional<Asset> optional = assetRepo.findById(assetId);
-        if(!optional.isPresent()){
-            throw new RuntimeException("invalid asset id");
+        try{
+            Optional<Asset> optional = assetRepo.findById(assetId);
+            if(!optional.isPresent()){
+                throw new RuntimeException("invalid asset id");
+            }
+
+            Optional<Employee> optionalEmployee = employeeRepo.findById(employeeId);
+            if(!optionalEmployee.isPresent()){
+                throw new RuntimeException("invalid employee id");
+            }
+            Asset asset = optional.get();
+            asset.setAssignment_status(Assignment_status.ASSIGNED.name());
+            asset.setEmployee(optionalEmployee.get());
+
+            Asset savedAsset = assetRepo.save(asset);
+            AssetResponseDTO assetResponseDTO = new AssetResponseDTO();
+            assetResponseDTO.setId(savedAsset.getId());
+            assetResponseDTO.setName(savedAsset.getName());
+            assetResponseDTO.setConditionNote(savedAsset.getConditionNote());
+            assetResponseDTO.setAssignment_status(savedAsset.getAssignment_status());
+            assetResponseDTO.setCategory(savedAsset.getCategory());
+            assetResponseDTO.setEmployee(savedAsset.getEmployee());
+
+            return  ResponseEntity.status(HttpStatus.OK).body("asset assigned");
         }
-
-        Optional<Employee> optionalEmployee = employeeRepo.findById(employeeId);
-        if(!optionalEmployee.isPresent()){
-            throw new RuntimeException("invalid employee id");
+        catch(Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("asset not assigned");
         }
-        Asset asset = optional.get();
-        asset.setAssignment_status(Assignment_status.ASSIGNED.name());
-        asset.setEmployee(optionalEmployee.get());
-
-        Asset savedAsset = assetRepo.save(asset);
-        AssetResponseDTO assetResponseDTO = new AssetResponseDTO();
-        assetResponseDTO.setId(savedAsset.getId());
-        assetResponseDTO.setName(savedAsset.getName());
-        assetResponseDTO.setConditionNote(savedAsset.getConditionNote());
-        assetResponseDTO.setAssignment_status(savedAsset.getAssignment_status());
-        assetResponseDTO.setCategory(savedAsset.getCategory());
-        assetResponseDTO.setEmployee(savedAsset.getEmployee());
-
-        return  ResponseEntity.status(HttpStatus.OK).body("asset assigned");
     }
 
     public ResponseEntity<Object> updateAsset(long id, AssetDTO assetDTO){
@@ -125,20 +189,27 @@ public class AssetService {
     }
 
     public ResponseEntity<Object> recoverAsset(long assetId){
-        Optional<Asset> optional = assetRepo.findById(assetId);
-        if(!optional.isPresent()){
-            throw new RuntimeException("invalid asset id");
+        try{
+            Optional<Asset> optional = assetRepo.findById(assetId);
+            if(!optional.isPresent()){
+                throw new RuntimeException("invalid asset id");
+            }
+
+            Asset asset = optional.get();
+            if(!asset.getAssignment_status().equalsIgnoreCase( Assignment_status.ASSIGNED.name())){
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Asset is not in assigned state");
+            }
+            asset.setEmployee(null);
+            asset.setAssignment_status(Assignment_status.RECOVERED.name());
+
+            Asset savedAsset = assetRepo.save(asset);
+
+            return ResponseEntity.status(HttpStatus.OK).body("Asset is recovered");
         }
+        catch(Exception e){
+            e.printStackTrace();
 
-        Asset asset = optional.get();
-        if(!asset.getAssignment_status().equalsIgnoreCase( Assignment_status.ASSIGNED.name())){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Asset is not in assigned state");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal error!");
         }
-        asset.setEmployee(null);
-        asset.setAssignment_status(Assignment_status.RECOVERED.name());
-
-        Asset savedAsset = assetRepo.save(asset);
-
-        return ResponseEntity.status(HttpStatus.OK).body("Asset is recovered");
     }
 }

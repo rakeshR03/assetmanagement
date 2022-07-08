@@ -23,60 +23,26 @@ public class AssetController {
 
     @PostMapping("/assets")
     public ResponseEntity<Object> addAsset(@RequestBody AssetDTO assetDTO){
-        Asset asset = assetService.addAsset(assetDTO);
+        return assetService.addAsset(assetDTO);
 
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().
-                path("/{id}").buildAndExpand(asset.getId()).toUri();
-
-        return ResponseEntity.created(location).build();
     }
 
     @DeleteMapping("/assets/{id}")
     public ResponseEntity<Object> deleteAsset(@PathVariable long id){
-        int res = assetService.deleteAsset(id);
-        if(res == 1){
-            return ResponseEntity.status(HttpStatus.OK).body("1 row deleted");
-        }
-        else{
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).
-                    body("cannot delete, asset in assigned state");
-        }
+        return assetService.deleteAsset(id);
+
     }
 
     @GetMapping("/assets")
-    public List<AssetResponseDTO> findAllAsset(){
-        List<Asset> assets = assetService.findAllAsset();
-        List<AssetResponseDTO> assetResponseDTOList = new ArrayList<>();
+    public ResponseEntity<Object> findAllAsset(){
+        return assetService.findAllAsset();
 
-        for(Asset asset: assets){
-            AssetResponseDTO assetResponseDTO = new AssetResponseDTO();
-            assetResponseDTO.setId(asset.getId());
-            assetResponseDTO.setName(asset.getName());
-            assetResponseDTO.setPurchaseDate(asset.getPurchaseDate());
-            assetResponseDTO.setConditionNote(asset.getConditionNote());
-            assetResponseDTO.setAssignment_status(asset.getAssignment_status());
-            assetResponseDTO.setCategory(asset.getCategory());
-            assetResponseDTO.setEmployee(asset.getEmployee());
-
-            assetResponseDTOList.add(assetResponseDTO);
-        }
-        return assetResponseDTOList;
     }
 
     @GetMapping("/assets/{name}")
     public ResponseEntity<Object> findAssetByName(@PathVariable String name){
-        Asset asset = assetService.findAssetByName(name);
+        return assetService.findAssetByName(name);
 
-        AssetResponseDTO assetResponseDTO = new AssetResponseDTO();
-        assetResponseDTO.setId(asset.getId());
-        assetResponseDTO.setName(asset.getName());
-        assetResponseDTO.setPurchaseDate(asset.getPurchaseDate());
-        assetResponseDTO.setConditionNote(asset.getConditionNote());
-        assetResponseDTO.setAssignment_status(asset.getAssignment_status());
-        assetResponseDTO.setCategory(asset.getCategory());
-        assetResponseDTO.setEmployee(asset.getEmployee());
-
-        return ResponseEntity.status(HttpStatus.OK).body(assetResponseDTO);
 
     }
 
